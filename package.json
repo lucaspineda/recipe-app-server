@@ -3,5 +3,8 @@
   "version": "1.0.0",
   "main": "index.js",
   "author": "lucaspineda <lucas.pineda@hotmail.com>",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.19.2"
+  }
 }
