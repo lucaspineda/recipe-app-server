@@ -1,13 +1,17 @@
+import { initializeApp, cert } from 'firebase-admin/app';
+import routes from './routes';
+
 const express = require('express');
 
 const app = express();
-const port = 3003;
 
-app.get('/', (req, res) => {
-  res.send('Hello, world!');
+app.use(express.json())
+
+
+initializeApp({
+  credential: cert('./src/services/serviceAccountKey.json'),
 });
 
-app.listen(port, () => {
-  console.log(`Server listening
- on port ${port}`);
-});
+routes(app)
+
+export default app
