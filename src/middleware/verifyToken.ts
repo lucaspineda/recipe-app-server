@@ -5,25 +5,18 @@ const verifyTokenMiddleware = async app => {
 
   app.use(async (req, res, next) => {
 
-    let idToken
-
-    if (req.headers.authorization) {
-      idToken = req.headers.authorization
-    } else {
-      return res.status(403).json({ error: 'Unauthorized' })
-    }
+    const idToken = req.headers.authorization
 
     getAuth()
       .verifyIdToken(idToken)
       .then((decodedToken) => {
-        const uid = decodedToken.uid;
-        res.status(200).json({ uid: uid })
+        const uid = decodedToken.uid
+        req.uid = uid
         return next()
 
       })
-      .catch((error) => {
+      .catch(() => {
         return res.status(403).json({ error: 'Unauthorized' })
-        // return res.status(403).json({ error: error })
       });
 
   })
