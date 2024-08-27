@@ -6,7 +6,7 @@ const verifyTokenMiddleware = async app => {
   app.use(async (req, res, next) => {
 
     if (!req.headers.authorization)
-      return ApiError.unauthorized(res, 'User Unauthorized')
+      return ApiError.unauthorized(res, 'Missing authorization header')
 
     const idToken = req?.headers?.authorization
 
@@ -18,7 +18,7 @@ const verifyTokenMiddleware = async app => {
         return next()
       })
       .catch(() => {
-        return ApiError.forbidden(res, 'Token invalid')
+        return ApiError.forbidden(res, 'Unauthorized')
       });
 
   })
