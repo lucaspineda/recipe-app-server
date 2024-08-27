@@ -7,7 +7,6 @@ const app = express();
 
 app.use(express.json())
 
-
 initializeApp({
   credential: cert('./src/services/serviceAccountKey.json'),
 });

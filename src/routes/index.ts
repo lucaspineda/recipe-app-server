@@ -1,3 +1,4 @@
+import verifyTokenMiddleware from  '../middleware/verifyToken.ts'
 import teste from './teste.ts'
 
 const routes = app => {
@@ -6,9 +7,8 @@ const routes = app => {
     res.send('Hello, world!');
   })
 
-  // Demais rotas
-  app.use('/teste', teste)
-  
-}
+  verifyTokenMiddleware(app)
 
+  app.use('/teste', teste)
+}
 export default routes

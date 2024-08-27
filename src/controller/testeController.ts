@@ -1,5 +1,3 @@
-
-
 class TesteController {
 
   static teste = async (req, res) => {
