@@ -1,5 +1,6 @@
 import verifyTokenMiddleware from  '../middleware/verifyToken.ts'
 import teste from './teste.ts'
+import gemini from './gemini.ts'
 
 const routes = app => {
 
@@ -10,5 +11,6 @@ const routes = app => {
   verifyTokenMiddleware(app)
 
   app.use('/teste', teste)
+  app.use('/gemini', gemini)
 }
 export default routes
