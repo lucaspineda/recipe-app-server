@@ -8,7 +8,7 @@ class GeminiController {
             return res.status(400).json({ body: 'body must not be empty' })
         }
 
-        const genAI = new GoogleGenerativeAI('AIzaSyAzs6S46b8FTRzzwyQ84kdezCkmPaQfqqc');
+        const genAI = new GoogleGenerativeAI('API_KEY');
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
         const { optionMeal, ingredients } = req.body
@@ -18,7 +18,11 @@ class GeminiController {
 
         const result = await model.generateContent(prompt);
 
-        return res.status(200).json(result.response.text())
+        return res.status(200).json({
+            recipe: result.response.text(),
+            optionMeal: optionMeal,
+            ingredients: ingredients
+        })
     }
 }
 
