@@ -14,7 +14,8 @@ class GeminiController {
         const { optionMeal, ingredients } = req.body
 
         const prompt = `Crie uma receita para o ${optionMeal} 
-        apenas com os seguintes ingredientes: ${ingredients}`
+        apenas com os seguintes ingredientes: ${ingredients}
+        e retorne em formato HTML com os titulos em negrito utilizando <strong>`
 
         const result = await model.generateContent(prompt);
 
