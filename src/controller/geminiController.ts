@@ -11,11 +11,19 @@ class GeminiController {
         const genAI = new GoogleGenerativeAI('API_KEY');
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-        const prompt = req.body.prompt
+        const { optionMeal, ingredients } = req.body
+
+        const prompt = `Crie uma receita para o ${optionMeal} 
+        apenas com os seguintes ingredientes: ${ingredients}
+        e retorne em formato HTML com os titulos em negrito utilizando <strong>`
 
         const result = await model.generateContent(prompt);
 
-        return res.status(200).json(result.response.text())
+        return res.status(200).json({
+            recipe: result.response.text(),
+            optionMeal: optionMeal,
+            ingredients: ingredients
+        })
     }
 }
 
