@@ -32,12 +32,12 @@ class GeminiController {
             }
           ],
           "modoDePreparo": [
-            "1. Aqueça uma frigideira em fogo médio.",
-            "2. Lorem ipsum
-            "3. Lorem ipsum
-            "4. Lorem ipsum
-            "5. Lorem ipsum
-            "9. Lorem ipsum"
+            "Aqueça uma frigideira em fogo médio.",
+            "Lorem ipsum
+            "Lorem ipsum
+            "Lorem ipsum
+            "Lorem ipsum
+            "Lorem ipsum"
           ],
           "observacoes": [
             "Lorem ipsum",
