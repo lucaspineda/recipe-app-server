@@ -9,7 +9,7 @@ const routes = app => {
     res.send('Hello, world!');
   })
 
-  verifyTokenMiddleware(app)
+  // verifyTokenMiddleware(app)
 
   app.use('/teste', teste)
   app.use('/gemini', gemini)
