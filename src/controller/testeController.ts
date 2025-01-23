@@ -7,6 +7,12 @@ class TesteController {
     }
     return res.status(200).json({ uid: req.uid })
   }
+
+  static test = async (req, res) => {
+
+    console.log('called test')
+    return res.status(200).json({ uid:'test' })
+  }
 }
 
 export default TesteController

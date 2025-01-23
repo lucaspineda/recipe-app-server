@@ -1,20 +1,21 @@
-import { initializeApp, cert } from 'firebase-admin/app';
-import routes from './routes';
-import cors from 'cors'
+import { initializeApp, cert } from "firebase-admin/app";
+import routes from "./routes";
+import cors from "cors";
+import { SecretManagerServiceClient } from "@google-cloud/secret-manager";
 
-const express = require('express');
+const express = require("express");
 
 const app = express();
 
-app.use(cors())
-app.options('*', cors());
+app.use(cors());
+app.options("*", cors());
 
-app.use(express.json())
+app.use(express.json());
 
 initializeApp({
-  credential: cert('./src/services/serviceAccountKey.json'),
+  projectId: "recipe-app-1bbdc",
 });
 
-routes(app)
+routes(app);
 
-export default app
+export default app;

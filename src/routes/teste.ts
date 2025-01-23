@@ -3,6 +3,7 @@ import express from "express"
 
 const router = express.Router()
 
-router.post('/', TesteController.teste)
+router.post('/post', TesteController.teste)
+router.get('/', TesteController.test)
 
 export default router
