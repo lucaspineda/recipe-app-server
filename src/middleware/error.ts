@@ -1,4 +1,4 @@
-import ApiError from '../utils/api-errors.ts'
+import ApiError from '../utils/api-errors'
 
 const errorMiddleware = async app => {
 

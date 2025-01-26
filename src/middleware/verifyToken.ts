@@ -1,8 +1,13 @@
 import { getAuth } from "firebase-admin/auth";
 import ApiError from "../utils/api-errors";
+import { Application, Request } from "express";
 
-const verifyTokenMiddleware = async (app) => {
-  app.use(async (req, res, next) => {
+interface AuthGuardRequest extends Request {
+  uid: string;
+}
+
+const verifyTokenMiddleware = async (app: Application) => {
+  app.use(async (req: Request, res, next) => {
     if (!req.headers.authorization)
       return ApiError.unauthorized(res, "Missing authorization header");
 
@@ -12,7 +17,7 @@ const verifyTokenMiddleware = async (app) => {
       .verifyIdToken(idToken)
       .then((decodedToken) => {
         const uid = decodedToken.uid;
-        req.uid = uid;
+        (req as AuthGuardRequest).uid = uid;
         return next();
       })
       .catch(() => {

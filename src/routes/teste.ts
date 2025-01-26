@@ -1,4 +1,4 @@
-import TesteController from "../controller/testeController.ts"
+import TesteController from "../controller/testeController"
 import express from "express"
 
 const router = express.Router()

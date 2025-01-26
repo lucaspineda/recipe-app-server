@@ -1,7 +1,6 @@
 import { initializeApp, cert } from "firebase-admin/app";
 import routes from "./routes";
 import cors from "cors";
-import { SecretManagerServiceClient } from "@google-cloud/secret-manager";
 
 const express = require("express");
 

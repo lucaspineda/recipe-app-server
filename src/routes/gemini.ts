@@ -1,4 +1,4 @@
-import GeminiController from "../controller/geminiController.ts"
+import GeminiController from "../controller/geminiController"
 import express from "express"
 
 const router = express.Router()

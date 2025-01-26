@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-
+import { Request, Response } from "express";
 class GeminiController {
-  static generatePrompt = async (req, res) => {
+  static generatePrompt = async (req: Request, res: Response) => {
 
     try {
       if (Object.keys(req.body).length === 0) {
@@ -50,7 +50,7 @@ class GeminiController {
       const result = await model.generateContent(prompt);
       console.log("response sent");
       return res.status(200).json(result.response.text());
-    } catch (error) {
+    } catch (error: any) {
       console.log(error)
       return res.status(500).json({ error: error.message });
     }

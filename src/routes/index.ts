@@ -1,19 +1,23 @@
-import verifyTokenMiddleware from  '../middleware/verifyToken.ts'
-import teste from './teste.ts'
-import gemini from './gemini.ts'
-import subscription from '../subscription/subscription.route.ts'
+import verifyTokenMiddleware from  '../middleware/verifyToken'
+import teste from './teste'
+import gemini from './gemini'
+import subscription from '../subscription/subscription.route'
+import { Application, Request, Response } from 'express';
 
-const routes = app => {
-
-  app.get('/', (req, res) => {
-    res.send('Hello, world!');
-  })
-
-  verifyTokenMiddleware(app)
-
-  app.use('/teste', teste)
-  app.use('/test', teste)
-  app.use('/gemini', gemini)
-  app.use(subscription)
+interface RouteHandler {
+  (app: Application): void;
 }
+
+const routes: RouteHandler = (app: Application): void => {
+  app.get('/', (req: Request, res: Response): void => {
+    res.send('Hello, world!');
+  });
+
+  verifyTokenMiddleware(app);
+
+  app.use('/teste', teste);
+  app.use('/test', teste);
+  app.use('/gemini', gemini);
+  app.use(subscription);
+};
 export default routes

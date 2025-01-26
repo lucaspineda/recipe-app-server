@@ -1,8 +1,6 @@
-import app from '../app.js'
+import app from '../app';
 
-const port = 3003;
-
+const port = process.env.PORT || 3003; // Use the injected PORT or default to 3003
 app.listen(port, () => {
-  console.log(`Server listening
- on port ${port}`);
+  console.log(`Server listening on port ${port}`);
 });

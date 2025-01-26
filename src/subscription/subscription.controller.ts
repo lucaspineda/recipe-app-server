@@ -1,6 +1,6 @@
 import { Stripe } from "stripe";
 import { firestore } from "firebase-admin";
-
+import { Request, Response } from "express";
 
 const stripe = new Stripe(
   "sk_test_51QVBgTHwruaG3UqlcoDEoKmGlLu6zJwLGiA2b9Km56F8CDV4pWMJBo97P9mBjvzeFvQudZcleSNxB5sEU4Ry3hux00wIbIQOgU"
@@ -8,7 +8,7 @@ const stripe = new Stripe(
 
 export class SubscriptionController {
   // private static firestore = admin.firestore();
-  static async createSubscription(req, res) {
+  static async createSubscription(req: Request, res: Response) {
     const origin = req.get("origin") || req.get("referer");
     const successUrl = `${origin}/plans/thank-you`;
     const cancelUrl = `${origin}/plans`;
@@ -30,7 +30,7 @@ export class SubscriptionController {
     res.json({ url: session.url });
   }
 
-  static async listenToWebhook(req, res) {
+  static async listenToWebhook(req: Request, res: Response) {
     let event = req.body;
 
     console.log("Received event:", event.type);
