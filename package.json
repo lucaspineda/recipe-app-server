@@ -6,7 +6,8 @@
   "license": "MIT",
   "scripts": {
     "start:dev": "tsx watch src/services/server.ts",
-    "start": "ts-node src/services/server.ts"
+    "build": "tsc",
+    "start": "node dist/services/server.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.19.0",
