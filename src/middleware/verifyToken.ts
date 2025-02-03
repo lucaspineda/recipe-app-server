@@ -8,6 +8,7 @@ interface AuthGuardRequest extends Request {
 
 const verifyTokenMiddleware = async (app: Application) => {
   app.use(async (req: Request, res, next) => {
+    if (req.path === '/webhook') return next()
     if (!req.headers.authorization)
       return ApiError.unauthorized(res, "Missing authorization header");
 
