@@ -7,15 +7,15 @@ export class WebhookController {
 
     console.log("Received event:", event.type);
     let plan: {
-      planId: string;
+      id: string;
       cost: number;
       name: string;
-      recipesCount?: number;
+      recipeCount?: number;
     } | null = null;
     let uid = null;
 
     try {
-      if (event.type === "customer.subscription.updated") {
+      if (event.type === "customer.subscription.created") {
         const metadata = event.data.object.metadata;
         const planString = metadata.plan;
         uid = metadata.uid;
@@ -26,16 +26,17 @@ export class WebhookController {
         const expiresAt = new Date();
         expiresAt.setMonth(expiresAt.getMonth() + 1);
         const doc = firestore().doc("users/" + uid);
+        console.log(doc.get(), 'socc')
 
         if (plan) {
           await doc.update({
             plan: {
-              planId: plan.planId,
+              planId: plan.id,
               startedAt: firestore.Timestamp.now(),
               expiresAt: expiresAt,
               cost: plan.cost,
               name: plan.name,
-              recipesCount: plan.recipesCount ?? null,
+              recipeCount: plan.recipeCount ?? null,
             },
           });
 
