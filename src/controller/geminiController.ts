@@ -1,17 +1,17 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from '@google/genai';
 import { Request, Response } from "express";
+
 class GeminiController {
   static generatePrompt = async (req: Request, res: Response) => {
-
     try {
       if (Object.keys(req.body).length === 0) {
         return res.status(400).json({ body: "body must not be empty" });
       }
-      const genAI = new GoogleGenerativeAI(
-        "AIzaSyBlyiYUioKr9r4o9PhZjnOM4ZvOjW20KXA"
-      );
-
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const ai = new GoogleGenAI({
+        vertexai: true,
+        project: 'recipe-app-1bbdc',
+        location: 'us-central1'
+      });
 
       const { optionMeal, ingredients } = req.body;
 
@@ -47,12 +47,25 @@ class GeminiController {
             "Lorem ipsum"
           ]
         }`;
-      const result = await model.generateContent(prompt);
-      console.log("response sent");
-      return res.status(200).json(result.response.text());
+
+      const tokenCount = prompt.split(/\s+/).length;
+      if (tokenCount > 100) {
+        return res.status(400).json({ error: "Token count exceeds 200" });
+      }
+
+      const result = await ai.models.generateContent({
+        model: "gemini-2.0-flash",
+        contents: prompt,
+        config: {
+          temperature: 0,
+          maxOutputTokens: 1512,
+        }
+      });
+      console.log(result.text);
+      return res.status(200).json({ response: result.text });
     } catch (error: any) {
-      console.log(error)
-      return res.status(500).json({ error: error.message });
+      console.log(error);
+      return res.status(500).json({ error: 'Error generating response' });
     }
   };
 }
