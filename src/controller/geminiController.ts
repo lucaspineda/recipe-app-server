@@ -49,7 +49,7 @@ class GeminiController {
         }`;
 
       const tokenCount = prompt.split(/\s+/).length;
-      if (tokenCount > 100) {
+      if (tokenCount > 200) {
         return res.status(400).json({ error: "Token count exceeds 200" });
       }
 

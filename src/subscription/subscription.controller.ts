@@ -1,16 +1,21 @@
-import {Stripe} from "stripe";
+import { Stripe } from "stripe";
 import { Request, Response } from "express";
+import { accessSecret } from "../utils/secretManager";
 
-const stripe = new Stripe(
-  "sk_test_51QVBgTHwruaG3UqlcoDEoKmGlLu6zJwLGiA2b9Km56F8CDV4pWMJBo97P9mBjvzeFvQudZcleSNxB5sEU4Ry3hux00wIbIQOgU"
-);
+const secretName = 'projects/315650529779/secrets/stripe-secret-key/versions/latest';
+
+let stripe: Stripe;
+
+(async () => {
+  const stripeSecret = await accessSecret(secretName);
+  stripe = new Stripe(stripeSecret as string);
+})();
 
 export interface AuthGuardRequest extends Request {
   uid: string
 }
 
 export class SubscriptionController {
-  // private static firestore = admin.firestore();
   static async createSubscription(req: AuthGuardRequest, res: Response): Promise<void> {
     const origin = req.get("origin") || req.get("referer");
     const successUrl = `${origin}/plans/thank-you`;
@@ -21,7 +26,7 @@ export class SubscriptionController {
       mode: "subscription",
       line_items: [
         {
-          price: "price_1QeZhzHwruaG3UqlZJ2kRpA1", // Replace with your price ID
+          price: plan.priceId,
           quantity: 1,
         },
       ],
