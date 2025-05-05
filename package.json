@@ -5,15 +5,16 @@
   "author": "lucaspineda <lucas.pineda@hotmail.com>",
   "license": "MIT",
   "scripts": {
-    "start:dev": "tsx watch src/services/server.ts",
+    "start:dev": "dotenv -e .env -- tsx watch src/services/server.ts",
     "build": "tsc",
-    "start": "node dist/services/server.js",
+    "start": "node src/services/server.ts",
     "deploy": "tsc && gcloud run deploy --source .",
     "deploy:only": "gcloud run deploy --source .",
     "set-project": "gcloud config set run/region southamerica-west1 && gcloud config set project recipe-app-1bbdc",
     "stripe:dev": "stripe listen --forward-to localhost:3003/webhook"
   },
   "dependencies": {
+    "@google-cloud/secret-manager": "^6.0.1",
     "@google/genai": "^0.9.0",
     "@google/generative-ai": "^0.19.0",
     "body-parser": "^1.20.3",
@@ -25,6 +26,7 @@
   "devDependencies": {
     "@types/cors": "^2.8.17",
     "@types/node": "^22.5.0",
+    "dotenv-cli": "^8.0.0",
     "ts-node": "^10.9.2",
     "tsx": "^3.12.3",
     "typescript": "^4.9.5"
