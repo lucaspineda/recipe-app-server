@@ -18,7 +18,10 @@ class GeminiController {
       const prompt = `Crie uma receita para o ${optionMeal} 
         apenas com os seguintes ingredientes: ${ingredients}
         e retorne um objeto com o objeto de titulo, objeto de introdução do prato, 
-        um objeto com os ingredientes, objeto com o modo de preparo, e objeto com observacoes,
+        um objeto com os ingredientes, objeto com o modo de preparo, e objeto com observacoes.
+        Intruções pra a receita:
+        - Seja específic em qual tipo de panela adequada para cada etapa da receita.
+
         siga o padrao: 
         {
           "titulo": "titulo",
