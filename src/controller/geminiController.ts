@@ -19,6 +19,7 @@ class GeminiController {
         apenas com os seguintes ingredientes: ${ingredients}
         e retorne um objeto com o objeto de titulo, objeto de introdução do prato, 
         um objeto com os ingredientes, objeto com o modo de preparo, e objeto com observacoes.
+        Caso o usuário não tenha passado ingredientes, crie uma receita qualquer.
         Intruções pra a receita:
         - Seja específic em qual tipo de panela adequada para cada etapa da receita.
 
