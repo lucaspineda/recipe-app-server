@@ -11,6 +11,7 @@
     "deploy": "tsc && gcloud run deploy --source .",
     "deploy:only": "gcloud run deploy --source .",
     "set-project": "gcloud config set run/region southamerica-west1 && gcloud config set project recipe-app-1bbdc",
+    "auth": "gcloud auth application-default login",
     "stripe:dev": "stripe listen --forward-to localhost:3003/webhook"
   },
   "dependencies": {
