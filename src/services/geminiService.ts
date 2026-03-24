@@ -48,12 +48,15 @@ export async function generateSingleRecipe(preferences: RecipePreferences): Prom
   console.log('Generated prompt:', prompt);
 
   const result = await ai.models.generateContent({
-    model: 'gemini-2.0-flash',
+    model: 'gemini-2.5-flash',
     contents: prompt,
     config: {
       temperature: 0.7,
-      maxOutputTokens: 2048,
+      maxOutputTokens: 4096,
       responseMimeType: 'application/json',
+      thinkingConfig: {
+        thinkingBudget: 0,
+      },
     },
   });
 
@@ -67,12 +70,15 @@ export async function generateMultipleRecipes(preferences: RecipePreferences): P
   console.log('Generated prompt:', prompt);
 
   const result = await ai.models.generateContent({
-    model: 'gemini-2.0-flash',
+    model: 'gemini-2.5-flash',
     contents: prompt,
     config: {
       temperature: 0.9,
-      maxOutputTokens: 8192,
+      maxOutputTokens: 16384,
       responseMimeType: 'application/json',
+      thinkingConfig: {
+        thinkingBudget: 0,
+      },
     },
   });
 
