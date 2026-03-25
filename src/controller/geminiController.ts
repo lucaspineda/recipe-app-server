@@ -1,8 +1,9 @@
 import { Request, Response } from 'express';
-import { RecipePreferences } from '../types/recipe';
+import { RecipePreferences, RefinementInput } from '../types/recipe';
 import {
   generateSingleRecipe,
   generateMultipleRecipes,
+  refineRecipes,
   generateRecipeImage as generateImage,
 } from '../services/geminiService';
 import { uploadRecipeImage } from '../services/storageService';
@@ -43,6 +44,27 @@ class GeminiController {
     } catch (error: any) {
       console.log(error);
       return res.status(500).json({ error: 'Error generating recipe options' });
+    }
+  };
+
+  static refineRecipeOptions = async (req: Request, res: Response) => {
+    try {
+      const { recipes, refinementInstruction } = req.body;
+
+      if (!recipes || !refinementInstruction) {
+        return res.status(400).json({ error: 'recipes and refinementInstruction are required' });
+      }
+
+      const input: RefinementInput = { recipes, refinementInstruction };
+      console.log('Refinement request:', refinementInstruction);
+
+      const result = await refineRecipes(input);
+      console.log(result);
+
+      return res.status(200).json({ response: result });
+    } catch (error: any) {
+      console.log(error);
+      return res.status(500).json({ error: 'Error refining recipes' });
     }
   };
 

@@ -130,6 +130,29 @@ ${MULTIPLE_RECIPE_JSON}
 O array "receitas" DEVE conter exatamente 4 receitas diferentes.`;
 }
 
+export function buildRefinementPrompt(recipes: object, refinementInstruction: string): string {
+  const recipesJson = JSON.stringify(recipes, null, 2);
+
+  return `Você é um assistente de culinária. O usuário já recebeu as receitas abaixo e quer fazer ajustes.
+
+Receitas atuais:
+${recipesJson}
+
+Instrução do usuário para refinamento:
+"${refinementInstruction}"
+
+Aplique a instrução do usuário às receitas acima. Regras:
+- Mantenha a mesma estrutura JSON exata das receitas originais.
+- Aplique o ajuste solicitado em TODAS as receitas afetadas.
+- Se o usuário pedir para remover um ingrediente, remova-o dos ingredientes E ajuste o modo de preparo.
+- Se o usuário pedir para trocar um ingrediente, substitua nos ingredientes E no modo de preparo.
+- Recalcule as informações nutricionais se houve mudança nos ingredientes.
+- Mantenha o mesmo número de receitas.
+- Retorne APENAS o JSON, sem markdown ou texto adicional.
+
+Retorne o JSON atualizado no mesmo formato das receitas originais.`;
+}
+
 export function buildImagePrompt(
   recipeTitle: string,
   recipeDescription?: string,

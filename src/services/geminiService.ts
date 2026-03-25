@@ -1,8 +1,9 @@
 import { GoogleGenAI } from '@google/genai';
-import { RecipePreferences, ImageGenerationInput } from '../types/recipe';
+import { RecipePreferences, ImageGenerationInput, RefinementInput } from '../types/recipe';
 import {
   buildSingleRecipePrompt,
   buildMultipleRecipePrompt,
+  buildRefinementPrompt,
   buildImagePrompt,
 } from './promptBuilder';
 
@@ -83,6 +84,37 @@ export async function generateMultipleRecipes(preferences: RecipePreferences): P
   });
 
   return parseJsonResponse(result.text);
+}
+
+export async function refineRecipes(input: RefinementInput): Promise<object> {
+  const ai = getAIClient();
+  const prompt = buildRefinementPrompt(input.recipes, input.refinementInstruction);
+
+  console.log('Refinement prompt:', prompt);
+
+  const result = await ai.models.generateContent({
+    model: 'gemini-2.5-flash',
+    contents: prompt,
+    config: {
+      temperature: 0.7,
+      maxOutputTokens: 16384,
+      responseMimeType: 'application/json',
+      thinkingConfig: {
+        thinkingBudget: 0,
+      },
+    },
+  });
+
+  const parsed = parseJsonResponse(result.text) as any;
+
+  // Normalize: ensure response always has { receitas: [...] } structure
+  if (Array.isArray(parsed)) {
+    return { receitas: parsed };
+  }
+  if (parsed.receitas) {
+    return parsed;
+  }
+  return { receitas: [parsed] };
 }
 
 export async function generateRecipeImage(input: ImageGenerationInput): Promise<Buffer> {
