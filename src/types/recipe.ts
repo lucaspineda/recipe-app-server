@@ -13,6 +13,11 @@ export interface ImageGenerationInput {
   preparationMethod?: string[];
 }
 
+export interface RefinementInput {
+  recipes: object;
+  refinementInstruction: string;
+}
+
 export interface UploadedImage {
   imageUrl: string;
   filename: string;
