@@ -10,11 +10,15 @@ import {
 const GCP_PROJECT = 'recipe-app-1bbdc';
 const GCP_LOCATION = 'us-central1';
 
-function getAIClient(): GoogleGenAI {
+// Imagen 4 was retired on Vertex AI; Gemini image models are served from the global endpoint.
+const IMAGE_MODEL = process.env.IMAGE_MODEL || 'gemini-3.1-flash-image';
+const IMAGE_LOCATION = process.env.IMAGE_LOCATION || 'global';
+
+function getAIClient(location: string = GCP_LOCATION): GoogleGenAI {
   return new GoogleGenAI({
     vertexai: true,
     project: GCP_PROJECT,
-    location: GCP_LOCATION,
+    location,
   });
 }
 
@@ -118,7 +122,7 @@ export async function refineRecipes(input: RefinementInput): Promise<object> {
 }
 
 export async function generateRecipeImage(input: ImageGenerationInput): Promise<Buffer> {
-  const ai = getAIClient();
+  const ai = getAIClient(IMAGE_LOCATION);
 
   const ingredientsList = input.ingredients && Array.isArray(input.ingredients)
     ? input.ingredients.map((i: any) => i.nome || i).join(', ')
@@ -135,37 +139,24 @@ export async function generateRecipeImage(input: ImageGenerationInput): Promise<
     preparationMethodText,
   );
 
-  const result = await ai.models.generateImages({
-    model: 'imagen-4.0-generate-001',
-    prompt: imagePrompt,
+  const result = await ai.models.generateContent({
+    model: IMAGE_MODEL,
+    contents: imagePrompt,
     config: {
-      numberOfImages: 1,
-      aspectRatio: '1:1',
+      responseModalities: ['IMAGE'],
+      imageConfig: {
+        aspectRatio: '1:1',
+      },
     },
   });
 
-  if (!result.generatedImages?.length) {
+  const parts = result.candidates?.[0]?.content?.parts ?? [];
+  const imagePart = parts.find((part) => part.inlineData?.data);
+
+  if (!imagePart?.inlineData?.data) {
+    console.log('Image generation returned no image:', JSON.stringify(result.candidates?.[0] ?? result));
     throw new Error('No image generated');
   }
 
-  const generatedImage = result.generatedImages[0] as any;
-
-  const imageBase64 =
-    generatedImage.image?.imageBytes ||
-    generatedImage.image?.imageData ||
-    generatedImage.imageBytes ||
-    generatedImage.image;
-
-  if (!imageBase64) {
-    console.log('Full generatedImage object:', generatedImage);
-    throw new Error('Invalid image data format');
-  }
-
-  const base64String = typeof imageBase64 === 'string'
-    ? imageBase64
-    : Buffer.isBuffer(imageBase64)
-      ? imageBase64.toString('base64')
-      : imageBase64;
-
-  return Buffer.from(base64String, 'base64');
+  return Buffer.from(imagePart.inlineData.data, 'base64');
 }

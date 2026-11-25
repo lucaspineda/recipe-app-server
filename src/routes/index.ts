@@ -20,7 +20,7 @@ const routes: RouteHandler = (app: Application): void => {
   app.use('/teste', verifyTokenMiddleware, teste);
   app.use('/test', teste);
   app.use('/gemini', gemini);
-  app.use(subscription);
+  app.use('/subscription', subscription);
   app.use(webhook)
 };
 export default routes
