@@ -2,7 +2,6 @@ import verifyTokenMiddleware from  '../middleware/verifyToken';
 import teste from './teste'
 import gemini from './gemini'
 import subscription from '../subscription/subscription.route'
-import webhook from '../webhook/webhook.route'
 import { Application, Request, Response } from 'express';
 
 interface RouteHandler {
@@ -21,6 +20,6 @@ const routes: RouteHandler = (app: Application): void => {
   app.use('/test', teste);
   app.use('/gemini', gemini);
   app.use('/subscription', subscription);
-  app.use(webhook)
+  // POST /webhook is registered in app.ts, before the JSON body parser.
 };
 export default routes

@@ -1,84 +1,53 @@
-import { Stripe } from "stripe";
 import { Request, Response } from "express";
-import { accessSecret } from "../utils/secretManager";
-
-const secretName = 'projects/315650529779/secrets/stripe-secret-key/versions/latest';
-
-let stripe: Stripe;
-
-(async () => {
-  const stripeSecret = await accessSecret(secretName);
-  stripe = new Stripe(stripeSecret as string);
-})();
+import { getStripe } from "../utils/stripeClient";
+import { firestoreStore } from "../billing/firestoreStore";
+import { BillingDeps } from "../billing/types";
+import { GENERIC_PAYMENT_ERROR, HttpError, declineMessage } from "../billing/errors";
+import {
+  cancelSubscription,
+  completeSubscription,
+  confirmSubscription,
+  createCheckoutSession,
+  createPortalSession,
+  createSetupIntent,
+} from "../billing/checkout";
 
 export interface AuthGuardRequest extends Request {
-  uid: string
+  uid: string;
 }
 
-export class SubscriptionController {
-  static async createSetupIntent(req: AuthGuardRequest, res: Response): Promise<void> {
-    const customer = await stripe.customers.create({
-      metadata: { uid: req.uid },
-    });
+type Action = (uid: string, req: AuthGuardRequest, deps: BillingDeps) => Promise<unknown>;
 
-    const setupIntent = await stripe.setupIntents.create({
-      customer: customer.id,
-      usage: 'off_session',
-    });
-
-    res.json({ clientSecret: setupIntent.client_secret, customerId: customer.id });
-  }
-
-  static async confirmSubscription(req: AuthGuardRequest, res: Response): Promise<void> {
-    const { customerId, paymentMethodId, plan } = req.body;
-
-    if (!customerId || !paymentMethodId || !plan) {
-      res.status(400).json({ error: 'customerId, paymentMethodId and plan are required' });
-      return;
+// Wraps a billing action: waits for the Stripe client, then turns errors into JSON the checkout page shows.
+function handle(action: Action) {
+  return async (req: Request, res: Response): Promise<void> => {
+    const authRequest = req as AuthGuardRequest;
+    try {
+      const deps: BillingDeps = { stripe: await getStripe(), store: firestoreStore };
+      res.json(await action(authRequest.uid, authRequest, deps));
+    } catch (error: any) {
+      if (error instanceof HttpError) {
+        res.status(error.status).json(error.body);
+        return;
+      }
+      if (error?.type === "StripeCardError") {
+        const code = error.decline_code ?? error.code ?? null;
+        res.status(402).json({ code: code ?? "card_declined", status: "declined", message: declineMessage(code) });
+        return;
+      }
+      console.error(`${req.method} ${req.originalUrl} failed:`, error);
+      res.status(500).json({ code: "server_error", message: GENERIC_PAYMENT_ERROR });
     }
-
-    await stripe.paymentMethods.attach(paymentMethodId, { customer: customerId });
-
-    await stripe.customers.update(customerId, {
-      invoice_settings: { default_payment_method: paymentMethodId },
-    });
-
-    const subscription = await stripe.subscriptions.create({
-      customer: customerId,
-      items: [{ price: plan.priceId }],
-      default_payment_method: paymentMethodId,
-      metadata: {
-        plan: JSON.stringify(plan),
-        uid: req.uid,
-      },
-    });
-
-    res.json({ subscriptionId: subscription.id, status: subscription.status });
-  }
-
-  static async createSubscription(req: AuthGuardRequest, res: Response): Promise<void> {
-    const origin = req.get("origin") || req.get("referer");
-    const successUrl = `${origin}/plans/thank-you`;
-    const cancelUrl = `${origin}/plans`;
-    const { plan } = req.body;
-    console.log(plan, 'plan')
-    const session = await stripe.checkout.sessions.create({
-      mode: "subscription",
-      line_items: [
-        {
-          price: plan.priceId,
-          quantity: 1,
-        },
-      ],
-      subscription_data: {
-        metadata: {
-          plan: JSON.stringify(plan),
-          uid: req.uid
-        },
-      },
-      success_url: successUrl,
-      cancel_url: cancelUrl,
-    });
-    res.json({ url: session.url });
-  }
+  };
 }
+
+export const SubscriptionController = {
+  createSetupIntent: handle((uid, _req, deps) => createSetupIntent(uid, deps)),
+  confirmSubscription: handle((uid, req, deps) => confirmSubscription(uid, req.body, deps)),
+  completeSubscription: handle((uid, req, deps) => completeSubscription(uid, req.body, deps)),
+  cancelSubscription: handle((uid, _req, deps) => cancelSubscription(uid, deps)),
+  createPortalSession: handle((uid, req, deps) => createPortalSession(uid, req.body, deps)),
+  createSubscription: handle((uid, req, deps) =>
+    createCheckoutSession(uid, req.body, req.get("origin") || undefined, deps),
+  ),
+};

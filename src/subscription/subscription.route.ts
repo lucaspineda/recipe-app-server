@@ -1,34 +1,14 @@
 import express from "express";
-import { AuthGuardRequest, SubscriptionController } from "./subscription.controller";
-import { Request, Response } from 'express';
+import { SubscriptionController } from "./subscription.controller";
 
+// Mounted at /subscription. Every route needs a Firebase ID token (see middleware/verifyToken.ts).
 const router = express.Router();
 
-router.post('/subscribe', async (req: Request, res: Response) => {
-  try {
-    const authGuardRequest = req as AuthGuardRequest;
-    await SubscriptionController.createSubscription(authGuardRequest, res);
-  } catch (error) {
-    res.status(500).send({ error: 'An error occurred while creating the subscription.' });
-  }
-});
-
-router.post('/setup-intent', async (req: Request, res: Response) => {
-  try {
-    const authGuardRequest = req as AuthGuardRequest;
-    await SubscriptionController.createSetupIntent(authGuardRequest, res);
-  } catch (error) {
-    res.status(500).send({ error: 'An error occurred while creating the setup intent.' });
-  }
-});
-
-router.post('/confirm-subscription', async (req: Request, res: Response) => {
-  try {
-    const authGuardRequest = req as AuthGuardRequest;
-    await SubscriptionController.confirmSubscription(authGuardRequest, res);
-  } catch (error) {
-    res.status(500).send({ error: 'An error occurred while confirming the subscription.' });
-  }
-});
+router.post("/setup-intent", SubscriptionController.createSetupIntent);
+router.post("/confirm-subscription", SubscriptionController.confirmSubscription);
+router.post("/complete-subscription", SubscriptionController.completeSubscription);
+router.post("/cancel", SubscriptionController.cancelSubscription);
+router.post("/portal", SubscriptionController.createPortalSession);
+router.post("/subscribe", SubscriptionController.createSubscription);
 
 export default router;

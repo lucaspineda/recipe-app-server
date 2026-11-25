@@ -1,53 +1,46 @@
-import { firestore } from "firebase-admin";
+import type Stripe from "stripe";
 import { Request, Response } from "express";
+import { getStripe, getWebhookSecret } from "../utils/stripeClient";
+import { firestoreStore } from "../billing/firestoreStore";
+import { handleStripeEvent } from "../billing/webhookEvents";
+import { BillingStore } from "../billing/types";
 
-export class WebhookController {
-  static async listenToWebhook(req: Request, res: Response) {
-    let event = req.body;
+// POST /webhook. Must receive the raw body (see app.ts): Stripe signs the exact bytes it sent.
+export function createWebhookHandler(store: BillingStore = firestoreStore) {
+  return async (req: Request, res: Response): Promise<void> => {
+    const signature = req.headers["stripe-signature"];
+    if (typeof signature !== "string" || !Buffer.isBuffer(req.body)) {
+      res.status(400).send("Missing Stripe signature or raw body");
+      return;
+    }
 
-    console.log("Received event:", event.type);
-    let plan: {
-      id: string;
-      cost: number;
-      name: string;
-      recipeCount?: number;
-    } | null = null;
-    let uid = null;
+    let stripe: Stripe;
+    let secret: string;
+    try {
+      [stripe, secret] = await Promise.all([getStripe(), getWebhookSecret()]);
+    } catch (error) {
+      // 500 makes Stripe retry later (for up to 3 days), so no event is lost while the secret is missing.
+      console.error("Stripe webhook: secrets unavailable:", error);
+      res.status(500).send();
+      return;
+    }
+
+    let event: Stripe.Event;
+    try {
+      event = stripe.webhooks.constructEvent(req.body, signature, secret);
+    } catch {
+      console.warn("Stripe webhook: rejected a request with an invalid signature");
+      res.status(400).send("Invalid signature");
+      return;
+    }
 
     try {
-      if (event.type === "customer.subscription.created") {
-        const metadata = event.data.object.metadata;
-        const planString = metadata.plan;
-        uid = metadata.uid;
-        plan = JSON.parse(planString);
-
-        console.log(plan, "Plan selected");
-
-        const expiresAt = new Date();
-        expiresAt.setMonth(expiresAt.getMonth() + 1);
-        const doc = firestore().doc("users/" + uid);
-        console.log(doc.get(), 'socc')
-
-        if (plan) {
-          await doc.update({
-            plan: {
-              planId: plan.id,
-              startedAt: firestore.Timestamp.now(),
-              expiresAt: expiresAt,
-              cost: plan.cost,
-              name: plan.name,
-              recipeCount: plan.recipeCount ?? null,
-            },
-          });
-
-          console.log("Plan changed successfully");
-        }
-      }
-
+      const outcome = await handleStripeEvent(event, { stripe, store });
+      console.log(`Stripe ${event.type} ${event.id}: ${outcome}`);
       res.status(200).send();
     } catch (error) {
-      console.log("Error: ", error);
+      console.error(`Stripe ${event.type} ${event.id} failed:`, error);
       res.status(500).send();
     }
-  }
+  };
 }
