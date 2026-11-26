@@ -6,6 +6,7 @@ import {
   buildRefinementPrompt,
   buildImagePrompt,
 } from './promptBuilder';
+import { QuotaRetryOptions, retryOnQuota } from './quotaRetry';
 
 const GCP_PROJECT = 'recipe-app-1bbdc';
 const GCP_LOCATION = 'us-central1';
@@ -121,8 +122,14 @@ export async function refineRecipes(input: RefinementInput): Promise<object> {
   return { receitas: [parsed] };
 }
 
-export async function generateRecipeImage(input: ImageGenerationInput): Promise<Buffer> {
-  const ai = getAIClient(IMAGE_LOCATION);
+/** Tests pass a fake client and instant waits; the route uses the defaults. */
+export interface RecipeImageDeps {
+  ai?: { models: Pick<GoogleGenAI['models'], 'generateContent'> };
+  retry?: QuotaRetryOptions;
+}
+
+export async function generateRecipeImage(input: ImageGenerationInput, deps: RecipeImageDeps = {}): Promise<Buffer> {
+  const ai = deps.ai ?? getAIClient(IMAGE_LOCATION);
 
   const ingredientsList = input.ingredients && Array.isArray(input.ingredients)
     ? input.ingredients.map((i: any) => i.nome || i).join(', ')
@@ -139,16 +146,21 @@ export async function generateRecipeImage(input: ImageGenerationInput): Promise<
     preparationMethodText,
   );
 
-  const result = await ai.models.generateContent({
-    model: IMAGE_MODEL,
-    contents: imagePrompt,
-    config: {
-      responseModalities: ['IMAGE'],
-      imageConfig: {
-        aspectRatio: '1:1',
-      },
-    },
-  });
+  // The photo model's quota is tight: a photo asked for right after another one gets a 429.
+  const result = await retryOnQuota(
+    () =>
+      ai.models.generateContent({
+        model: IMAGE_MODEL,
+        contents: imagePrompt,
+        config: {
+          responseModalities: ['IMAGE'],
+          imageConfig: {
+            aspectRatio: '1:1',
+          },
+        },
+      }),
+    { label: 'Recipe photo', ...deps.retry },
+  );
 
   const parts = result.candidates?.[0]?.content?.parts ?? [];
   const imagePart = parts.find((part) => part.inlineData?.data);
