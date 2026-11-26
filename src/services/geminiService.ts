@@ -1,4 +1,4 @@
-import { GoogleGenAI } from '@google/genai';
+import { GenerateContentResponse, GoogleGenAI, ThinkingLevel } from '@google/genai';
 import { RecipePreferences, ImageGenerationInput, RefinementInput } from '../types/recipe';
 import {
   buildSingleRecipePrompt,
@@ -8,18 +8,34 @@ import {
 } from './promptBuilder';
 
 const GCP_PROJECT = 'recipe-app-1bbdc';
-const GCP_LOCATION = 'us-central1';
+
+// gemini-2.5-flash passed its Vertex retirement date (2026-10-20). Google lists gemini-3.5-flash-lite as a
+// replacement. It is served from the global endpoint (or the us/eu multi-regions), not from us-central1.
+// Gemini 3.x ignores temperature/topP/topK and takes thinkingLevel instead of thinkingBudget; MINIMAL is the
+// fastest level. Comparison and reasoning: docs/gemini-text-model-migration.md.
+const TEXT_MODEL = 'gemini-3.5-flash-lite';
+const TEXT_LOCATION = 'global';
+const TEXT_THINKING = { thinkingLevel: ThinkingLevel.MINIMAL };
 
 // Imagen 4 was retired on Vertex AI; Gemini image models are served from the global endpoint.
 const IMAGE_MODEL = process.env.IMAGE_MODEL || 'gemini-3.1-flash-image';
 const IMAGE_LOCATION = process.env.IMAGE_LOCATION || 'global';
 
-function getAIClient(location: string = GCP_LOCATION): GoogleGenAI {
+function getAIClient(location: string): GoogleGenAI {
   return new GoogleGenAI({
     vertexai: true,
     project: GCP_PROJECT,
     location,
   });
+}
+
+function logUsage(route: string, result: GenerateContentResponse, startedAt: number): void {
+  const usage = result.usageMetadata;
+  console.log(
+    `[gemini] ${route} model=${result.modelVersion ?? TEXT_MODEL} ms=${Date.now() - startedAt}` +
+      ` in=${usage?.promptTokenCount ?? 0} out=${usage?.candidatesTokenCount ?? 0}` +
+      ` thoughts=${usage?.thoughtsTokenCount ?? 0} finish=${result.candidates?.[0]?.finishReason}`,
+  );
 }
 
 function parseJsonResponse(text: string | undefined): object {
@@ -46,70 +62,56 @@ function parseJsonResponse(text: string | undefined): object {
   }
 }
 
+// In testing, gemini-3.5-flash-lite returned unparseable JSON on 1 of 60 calls (a 4-recipe options call), and the
+// same request parsed on the next try. One retry keeps that rare miss from reaching the user as a 500.
+export async function parseWithRetry(route: string, generate: () => Promise<string | undefined>): Promise<any> {
+  const first = await generate();
+  try {
+    return parseJsonResponse(first);
+  } catch {
+    console.log(`[gemini] ${route} returned invalid JSON, retrying once`);
+    return parseJsonResponse(await generate());
+  }
+}
+
+async function generateText(route: string, prompt: string, maxOutputTokens: number): Promise<string | undefined> {
+  const ai = getAIClient(TEXT_LOCATION);
+  const startedAt = Date.now();
+  const result = await ai.models.generateContent({
+    model: TEXT_MODEL,
+    contents: prompt,
+    config: {
+      maxOutputTokens,
+      responseMimeType: 'application/json',
+      thinkingConfig: TEXT_THINKING,
+    },
+  });
+  logUsage(route, result, startedAt);
+  return result.text;
+}
+
 export async function generateSingleRecipe(preferences: RecipePreferences): Promise<object> {
-  const ai = getAIClient();
   const prompt = buildSingleRecipePrompt(preferences);
 
   console.log('Generated prompt:', prompt);
 
-  const result = await ai.models.generateContent({
-    model: 'gemini-2.5-flash',
-    contents: prompt,
-    config: {
-      temperature: 0.7,
-      maxOutputTokens: 4096,
-      responseMimeType: 'application/json',
-      thinkingConfig: {
-        thinkingBudget: 0,
-      },
-    },
-  });
-
-  return parseJsonResponse(result.text);
+  return parseWithRetry('single', () => generateText('single', prompt, 4096));
 }
 
 export async function generateMultipleRecipes(preferences: RecipePreferences): Promise<object> {
-  const ai = getAIClient();
   const prompt = buildMultipleRecipePrompt(preferences);
 
   console.log('Generated prompt:', prompt);
 
-  const result = await ai.models.generateContent({
-    model: 'gemini-2.5-flash',
-    contents: prompt,
-    config: {
-      temperature: 0.9,
-      maxOutputTokens: 16384,
-      responseMimeType: 'application/json',
-      thinkingConfig: {
-        thinkingBudget: 0,
-      },
-    },
-  });
-
-  return parseJsonResponse(result.text);
+  return parseWithRetry('options', () => generateText('options', prompt, 16384));
 }
 
 export async function refineRecipes(input: RefinementInput): Promise<object> {
-  const ai = getAIClient();
   const prompt = buildRefinementPrompt(input.recipes, input.refinementInstruction);
 
   console.log('Refinement prompt:', prompt);
 
-  const result = await ai.models.generateContent({
-    model: 'gemini-2.5-flash',
-    contents: prompt,
-    config: {
-      temperature: 0.7,
-      maxOutputTokens: 16384,
-      responseMimeType: 'application/json',
-      thinkingConfig: {
-        thinkingBudget: 0,
-      },
-    },
-  });
-
-  const parsed = parseJsonResponse(result.text) as any;
+  const parsed = await parseWithRetry('refine', () => generateText('refine', prompt, 16384));
 
   // Normalize: ensure response always has { receitas: [...] } structure
   if (Array.isArray(parsed)) {
