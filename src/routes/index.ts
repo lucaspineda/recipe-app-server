@@ -2,6 +2,7 @@ import verifyTokenMiddleware from  '../middleware/verifyToken';
 import teste from './teste'
 import gemini from './gemini'
 import subscription from '../subscription/subscription.route'
+import { createJobsRouter } from '../jobs/jobs.route'
 import { Application, Request, Response } from 'express';
 
 interface RouteHandler {
@@ -13,7 +14,9 @@ const routes: RouteHandler = (app: Application): void => {
     res.send('Hello, world!');
   });
 
-  
+  // Cloud Scheduler jobs check their own Google token, so they go before the Firebase sign-in check.
+  app.use('/jobs', createJobsRouter());
+
   verifyTokenMiddleware(app);
   
   app.use('/teste', verifyTokenMiddleware, teste);

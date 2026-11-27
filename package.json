@@ -8,6 +8,7 @@
     "start:dev": "dotenv -e .env -- tsx watch src/services/server.ts",
     "build": "tsc",
     "test": "tsx --test test/*.test.ts",
+    "test:emulator": "firebase emulators:exec --config test-emulator/firebase.json --only firestore --project demo-credits-reset \"tsx --test test-emulator/*.test.ts\"",
     "start": "node src/services/server.ts",
     "deploy": "tsc && gcloud run deploy --source .",
     "deploy:only": "gcloud run deploy --source .",
@@ -24,6 +25,7 @@
     "cors": "^2.8.5",
     "express": "^4.19.2",
     "firebase-admin": "^12.4.0",
+    "google-auth-library": "^9.15.1",
     "stripe": "^17.5.0",
     "uuid": "^13.0.0"
   },
