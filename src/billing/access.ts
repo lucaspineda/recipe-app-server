@@ -4,7 +4,8 @@ import { subscriptionPriceId } from "./stripeObjects";
 
 const FREE_PLAN_ID = 1;
 
-function toMillis(value: unknown): number | null {
+// A Firestore Timestamp, a Date, or a serialized { seconds } value, in milliseconds.
+export function toMillis(value: unknown): number | null {
   if (!value) return null;
   if (value instanceof Date) return value.getTime();
   const v = value as { toMillis?: () => number; seconds?: number; _seconds?: number };
